@@ -1,95 +1,93 @@
-const { Thought, User, Reaction } = require('../models');
-const {Types} = require('mongoose');
+const { User } = require('../models');
 
-// Define the ThoughtController object, which contains methods for handling various API requests related to thoughts
-const ThoughtController = {
-  async getAllThoughts(req, res) {
-    try {
-      const thoughts = await Thought.find({});
-      res.json(thoughts);
-    } catch (err) {
-      res.status(500).json(err);
-    }
+const UserController = {
+  // 1. Get all users
+  getAllUsers(req, res) {
+    User.find({})
+      .then(userData => res.json(userData))
+      .catch(err => res.status(500).json(err));
   },
 
-  // Handler for the "get thought by ID" API endpoint
-  async getThoughtsById(req, res) {
-    try {
-      const thought = await Thought.findOne({_id:req.params.thoughtId});
-      if (!thought) {
-        res.status(404).json({ message: 'Thought not found' });
-      } else {
-        res.json(thought);
-      }
-    } catch (err) {
-      res.status(500).json(err);
-    }
-  },
-  // Handler for the "create thought" API endpoint
-  async createThought(req, res) {
-    try {
-      const thought = await Thought.create(req.body);
-      res.status(201).json(thought);
-    } catch (err) {
-      res.status(500).json(err);
-    }
+  // 2. Get one user by ID
+  getUserById(req, res) {
+    User.findById(req.params.userId)
+      .then(userData => res.json(userData))
+      .catch(err => res.status(500).json(err));
   },
   
-  // Handler for the "delete thought" API endpoint
-  async deleteThought(req,res) {
-    try {
-        const thought = await Thought.findByIdAndDelete({_id:req.params.thoughtId});
-        res.status(200).json(thought);
-    } catch (err) {
-        res.status(500).json(err);
-    }
+  // 3. Create a user
+  createUser(req, res) {
+    User.create(req.body)
+      .then(userData => res.json(userData))
+      .catch(err => res.status(500).json(err));
   },
 
-  // Handler for the "update thought by ID" API endpoint
-  async updateThoughtById(req, res) {
-    try {
-      const thought = await Thought.findByIdAndUpdate(req.params.thoughtId, req.body, {
-        new: true,
-      });
-      if (!thought) {
-        res.status(404).json({ message: 'Thought not found' });
-      } else {
-        res.json(thought);
-      }
-    } catch (err) {
-      res.status(500).json(err);
-    }
+  // 4. Update user by ID
+  updateUserById(req, res) {
+    User.findOneAndUpdate(req.params.id, req.body, { new: true })
+      .then(userData => {
+        if (!userData) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(userData);
+      })
+      .catch(err => res.status(500).json(err));
   },
 
-  // Handler for the "create reaction" API endpoint
-  async createReaction(req, res) {
-      try {
-        const thought = await Thought.findOneAndUpdate(
-            {_id:req.params.thoughtId},
-            {$addToSet: {reactions: req.body}},
-            {runValidators: true, new: true}
-        );
-        thought ? res.json(thought) : res.status(404).json({message: notFound});
-    } catch (e) {
-        res.status(500).json(e);
-    }
+  // 5. Delete user
+  deleteUserById(req, res) {
+    User.findOneAndDelete(req.params.id)
+      .then(userData => {
+        if (!userData) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        res.json({ message: 'User deleted successfully' });
+      })
+      .catch(err => res.status(500).json(err));
   },
 
-// Handler for the "delete reaction" API endpoint
-  async deleteReaction(req, res) {
-      try {
-        const thought = await Thought.findOneAndUpdate(
-            {_id: req.params.thoughtId},
-            {$pull: {reactions: {reactionId: req.params.reactionId}}},
-            {runValidators: true, new: true}
-        );
-
-        thought ? res.json(thought) : res.status(404).json({message: notFound});
-    } catch (e) {
-        res.status(500).json(e);
-    }
+  // 6. Add friend to user's friend list
+  addFriend(req, res) {
+    User.findOneAndUpdate(
+      { _id: req.params.userId },
+      { $addToSet: { friends: req.body.friendId || req.params.friendId} },
+      { new: true }
+    )
+      .then(userData => {
+        if (!userData) {
+          return res.status(404).json({ message: 'User not found' });
+        }
+        res.json(userData);
+      })
+      .catch(err => res.status(500).json(err));
   },
 
+
+  // NEW 7. Remove friend from user's friend list
+
+  removeFriend({ params }, res) {
+    User.findOneAndUpdate(
+      { _id: params.userId },
+      { $pull: { friends: params.friendId } },
+      { new: true }
+    )
+      .then((dbUserData) => {
+        if (!dbUserData) {
+          return res.status(404).json({ message: "No user with this id!" });
+        }
+        // check if friend was removed
+        const removed = !dbUserData.friends.includes(params.friendId);
+        // return response with appropriate message
+        if (removed) {
+          res.json({ message: "Friend removed successfully!", dbUserData });
+        } else {
+          res.json(dbUserData);
+        }
+      })
+      .catch((err) => res.status(400).json(err));
+  },
 };
-// Export ThoughtController
-module.exports = ThoughtController;
+
+
+// Export UserController
+module.exports = UserController;
