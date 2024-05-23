@@ -1,19 +1,16 @@
-// importing required packages and files
-const express =  require('express');
-const db = require('./config/connection');
+const express = require('express');
 const routes = require('./routes');
-// Set up variables
-const PORT = process.env.PORT || 3001;
+// import sequelize connection
+
 const app = express();
-// middleware
-app.use(express.urlencoded({ extended: true }));
+const PORT =  3001;
+
 app.use(express.json());
-// routes
-app.use(routes); 
-// Connect to the MongoDB database and start the server
-db.once('open', () => {
-    app.listen(PORT, () => {
-      console.log(`API server running on port ${PORT}!`);
-    });
-  });
-  
+app.use(express.urlencoded({ extended: true }));
+
+app.use(routes);
+
+// sync sequelize models to the database, then turn on the server
+app.listen(PORT, () => {
+  console.log(`App listening on port ${PORT}!`);
+});
